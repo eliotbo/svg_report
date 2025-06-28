@@ -9,11 +9,10 @@ fn main() {
     /* ── geometry parameters ─────────────────────────────────────────── */
     let rect_w = Mm(80.0); // width  80 mm
     let rect_h = Mm(15.0); // height 15 mm
-    let radius = Mm(4.0); // 4 mm corner radius
     let origin = (Mm(65.0), Mm(140.0)); // lower‑left corner on page
 
-    /* ── draw rounded rectangle ──────────────────────────────────────── */
-    draw_rounded_rect(&layer, origin, rect_w, rect_h, radius);
+    /* ── draw text input outline with curved sides ───────────────────── */
+    draw_curved_sides_rect(&layer, origin, rect_w, rect_h);
 
     /* ── add centred text ────────────────────────────────────────────── */
     let font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
@@ -46,31 +45,61 @@ fn main() {
 }
 
 /* --------------------------------------------------------------------- */
-/* helper: rounded rectangle built from straight edges + curved corners  */
-fn draw_rounded_rect(layer: &PdfLayerReference, origin: (Mm, Mm), w: Mm, h: Mm, r: Mm) {
+/* helper: draw a capsule-like rectangle with curved left and right sides */
+fn draw_curved_sides_rect(
+    layer: &PdfLayerReference,
+    origin: (Mm, Mm),
+    w: Mm,
+    h: Mm,
+) {
     use printpdf::{Line, Point};
 
-    let (x0, y0) = origin;
-    let (w, h, r) = (w.0, h.0, r.0);
+    const C: f32 = 0.55191505; // bezier approximation constant
 
-    // points around the perimeter, clockwise
+    let (x0, y0) = origin;
+    let (w, h) = (w.0, h.0);
+    let r = h / 2.0; // radius for the side curves
+    let c = r * C;
+
     let pts = vec![
-        (Point::new(Mm(x0.0 + r), Mm(y0.0)), false),     // move
-        (Point::new(Mm(x0.0 + w - r), Mm(y0.0)), false), // top edge
-        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r)), true),  // top‑right curve
-        (Point::new(Mm(x0.0 + w), Mm(y0.0 + h - r)), false), // right edge
-        (Point::new(Mm(x0.0 + w - r), Mm(y0.0 + h)), true), // bottom‑right curve
-        (Point::new(Mm(x0.0 + r), Mm(y0.0 + h)), false), // bottom edge
-        (Point::new(Mm(x0.0), Mm(y0.0 + h - r)), true),  // bottom‑left curve
-        (Point::new(Mm(x0.0), Mm(y0.0 + r)), false),     // left edge
-        (Point::new(Mm(x0.0 + r), Mm(y0.0)), true),      // top‑left curve, back to start
+        // start at bottom left after left curve
+        (Point::new(Mm(x0.0 + r), Mm(y0.0)), false),
+        // bottom edge
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0)), false),
+
+        // right side - bottom quarter
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + w - r + c), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r - c)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r)), false),
+
+        // right side - top quarter
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r + c)), true),
+        (Point::new(Mm(x0.0 + w - r + c), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0 + h)), false),
+
+        // top edge
+        (Point::new(Mm(x0.0 + r), Mm(y0.0 + h)), false),
+
+        // left side - top quarter
+        (Point::new(Mm(x0.0 + r), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0 + r - c), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + r + c)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + r)), false),
+
+        // left side - bottom quarter
+        (Point::new(Mm(x0.0), Mm(y0.0 + r)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + r - c)), true),
+        (Point::new(Mm(x0.0 + r - c), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + r), Mm(y0.0)), false),
     ];
 
-    // build and add shape
     let line = Line {
         points: pts,
         is_closed: true,
         ..Default::default()
     };
+
     layer.add_line(line);
 }
