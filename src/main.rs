@@ -14,6 +14,13 @@ fn main() {
     /* ── draw text input outline with curved sides ───────────────────── */
     draw_curved_sides_rect(&layer, origin, rect_w, rect_h);
 
+    // draw a rounded rectangle below the pill
+    let rounded_rect_origin = (Mm(origin.0 .0), Mm(origin.1 .0 - 25.0));
+    let rounded_rect_w = rect_w;
+    let rounded_rect_h = Mm(20.0);
+    let corner_radius = Mm(4.0);
+    draw_rounded_rect(&layer, rounded_rect_origin, rounded_rect_w, rounded_rect_h, corner_radius);
+
     /* ── add centred text ────────────────────────────────────────────── */
     let font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
     let caption = "Jane Doe";
@@ -89,6 +96,71 @@ fn draw_curved_sides_rect(
         (Point::new(Mm(x0.0), Mm(y0.0 + r)), false),
 
         // left side - bottom quarter
+        (Point::new(Mm(x0.0), Mm(y0.0 + r)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + r - c)), true),
+        (Point::new(Mm(x0.0 + r - c), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + r), Mm(y0.0)), false),
+    ];
+
+    let line = Line {
+        points: pts,
+        is_closed: true,
+        ..Default::default()
+    };
+
+    layer.add_line(line);
+}
+
+/* helper: draw a rectangle with rounded corners */
+fn draw_rounded_rect(
+    layer: &PdfLayerReference,
+    origin: (Mm, Mm),
+    w: Mm,
+    h: Mm,
+    r: Mm,
+) {
+    use printpdf::{Line, Point};
+
+    const C: f32 = 0.55191505; // bezier approximation constant
+
+    let (x0, y0) = origin;
+    let (w, h, r) = (w.0, h.0, r.0);
+    let c = r * C;
+
+    let pts = vec![
+        // start at bottom left after corner
+        (Point::new(Mm(x0.0 + r), Mm(y0.0)), false),
+        // bottom edge
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0)), false),
+
+        // bottom-right corner
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + w - r + c), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r - c)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r)), false),
+
+        // right edge
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + h - r)), false),
+
+        // top-right corner
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + h - r)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + h - r + c)), true),
+        (Point::new(Mm(x0.0 + w - r + c), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0 + h)), false),
+
+        // top edge
+        (Point::new(Mm(x0.0 + r), Mm(y0.0 + h)), false),
+
+        // top-left corner
+        (Point::new(Mm(x0.0 + r), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0 + r - c), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + h - r + c)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + h - r)), false),
+
+        // left edge
+        (Point::new(Mm(x0.0), Mm(y0.0 + r)), false),
+
+        // bottom-left corner
         (Point::new(Mm(x0.0), Mm(y0.0 + r)), true),
         (Point::new(Mm(x0.0), Mm(y0.0 + r - c)), true),
         (Point::new(Mm(x0.0 + r - c), Mm(y0.0)), true),
