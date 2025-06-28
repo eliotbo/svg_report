@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+	  {
+		  "type": "lldb",
+		  "request": "launch",
+		  "name": "Custom launch",
+		  "program": "./target/debug/examples/json"
+	  },
+	  {
+		  "type": "lldb-mi",
+		  "request": "launch",
+		  "name": "Launch Program",
+		  "target": "./target/debug/examples/simple",
+		  "cwd": "${workspaceRoot}"
+	  }
+  ]
+}
