@@ -1,4 +1,5 @@
 use printpdf::*;
+use owned_ttf_parser::{AsFaceRef, OwnedFace};
 use std::{fs::File, io::BufWriter};
 
 mod shapes;
@@ -25,27 +26,43 @@ fn main() {
     draw_rounded_rect(&layer, rounded_rect_origin, rounded_rect_w, rounded_rect_h, corner_radius);
 
     /* ── add centred text ────────────────────────────────────────────── */
-    let font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
+    // load an external font so we can query exact glyph metrics
+    let font_bytes = include_bytes!("../vendor/printpdf/assets/fonts/RobotoMedium.ttf");
+    let mut reader = std::io::Cursor::new(font_bytes.as_ref());
+    let font = doc.add_external_font(&mut reader).unwrap();
+
     let caption = "Jane Doe";
     let font_size_pt: f32 = 10.0;
 
-    // text width in points (1 pt = 1/72 inch)
-    let text_w_pt = {
-        // printpdf does not currently expose a convenient API for obtaining the
-        // rendered text width. For the sake of positioning the caption we use a
-        // rough estimate based on the number of characters.
-        caption.chars().count() as f32 * font_size_pt * 0.6
-    };
+    // helper for converting between points and millimetres
+    let pt_to_mm = |pt: f32| pt * 25.4 / 72.0;
 
-    // convert helper: points ‑> Mm
-    let pt_to_mm = |pt: f32| Mm(pt * 25.4 / 72.0);
+    // compute exact text width using glyph metrics
+    let face = OwnedFace::from_vec(font_bytes.to_vec(), 0).unwrap();
+    let units_per_em = face.as_face_ref().units_per_em() as f32;
+    let mut width_units = 0u32;
+    for ch in caption.chars() {
+        if let Some(gid) = face.as_face_ref().glyph_index(ch) {
+            if let Some(adv) = face.as_face_ref().glyph_hor_advance(gid) {
+                width_units += adv as u32;
+            }
+        }
+    }
+    let ascent = face.as_face_ref().ascender() as f32;
+    let descent = face.as_face_ref().descender() as f32;
+    let width_pt = width_units as f32 / units_per_em * font_size_pt;
+    let height_pt = (ascent - descent) / units_per_em * font_size_pt;
+    let descent_pt = -descent / units_per_em * font_size_pt;
+    let text_w_mm = pt_to_mm(width_pt);
+    let text_h_mm = pt_to_mm(height_pt);
+    let descent_mm = pt_to_mm(descent_pt);
 
-    // centre inside the rectangle
-    let (x0, y0) = origin;
-    let text_x = x0.0 + (rect_w.0 - pt_to_mm(text_w_pt).0) * 0.5;
-    let text_y = y0.0 + (rect_h.0 + pt_to_mm(font_size_pt * 0.30).0) * 0.5;
+    // centre inside the rounded rectangle
+    let (x0, y0) = rounded_rect_origin;
+    let text_x = x0.0 + (rounded_rect_w.0 - text_w_mm) * 0.5;
+    let baseline_y = y0.0 + (rounded_rect_h.0 - text_h_mm) * 0.5 + descent_mm;
 
-    layer.use_text(caption, font_size_pt, Mm(text_x), Mm(text_y), &font);
+    layer.use_text(caption, font_size_pt, Mm(text_x), Mm(baseline_y), &font);
 
     // draw various audiogram symbols below
     let sym_font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();

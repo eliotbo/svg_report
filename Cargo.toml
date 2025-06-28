@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 printpdf = "0.7.0"
+owned_ttf_parser = "0.19"
