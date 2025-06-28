@@ -230,6 +230,7 @@ dependencies = [
 name = "svg_report"
 version = "0.1.0"
 dependencies = [
+ "owned_ttf_parser",
  "printpdf",
 ]
 
