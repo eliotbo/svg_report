@@ -278,6 +278,7 @@ fn draw_angle(
     let col = color.to_color();
     layer.set_outline_color(col.clone());
     layer.set_fill_color(col.clone());
+    layer.set_outline_thickness(if filled { 1.0 } else { 0.5 });
     if filled {
         let poly = Polygon {
             rings: vec![vec![(p1, false), (p2, false), (p3, false)]],
@@ -292,6 +293,7 @@ fn draw_angle(
             ..Default::default()
         });
     }
+    layer.set_outline_thickness(0.0);
 }
 
 fn draw_bracket(
@@ -305,26 +307,31 @@ fn draw_bracket(
     use printpdf::{Line, Point};
     let d = pt_to_mm(size_pt);
     let (x0, y0) = (origin.0 .0, origin.1 .0);
+    let h = d * 0.6;
     let (p1, p2, p3, p4) = if left {
         (
-            Point::new(Mm(x0 + d), Mm(y0)),
+            Point::new(Mm(x0 + h), Mm(y0)),
             Point::new(Mm(x0), Mm(y0)),
             Point::new(Mm(x0), Mm(y0 + d)),
-            Point::new(Mm(x0 + d), Mm(y0 + d)),
+            Point::new(Mm(x0 + h), Mm(y0 + d)),
         )
     } else {
         (
-            Point::new(Mm(x0), Mm(y0)),
+            Point::new(Mm(x0 + d - h), Mm(y0)),
             Point::new(Mm(x0 + d), Mm(y0)),
             Point::new(Mm(x0 + d), Mm(y0 + d)),
-            Point::new(Mm(x0), Mm(y0 + d)),
+            Point::new(Mm(x0 + d - h), Mm(y0 + d)),
         )
     };
 
     let col = color.to_color();
     layer.set_outline_color(col);
     layer.set_outline_thickness(if filled { 1.0 } else { 0.5 });
-    layer.add_line(Line { points: vec![(p1, false), (p2, false), (p3, false), (p4, false)], is_closed: false, ..Default::default() });
+    layer.add_line(Line {
+        points: vec![(p1, false), (p2, false), (p3, false), (p4, false)],
+        is_closed: false,
+        ..Default::default()
+    });
     layer.set_outline_thickness(0.0);
 }
 
