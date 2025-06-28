@@ -127,7 +127,6 @@ fn draw_tonal_audiometry(layer: &PdfLayerReference, font: &IndirectFontRef) {
                 (Point::new(Mm(x), Mm(grid_y - grid_height)), false),
             ],
             is_closed: false,
-            is_filled: false,
         };
         layer.add_line(line);
     }
@@ -143,7 +142,6 @@ fn draw_tonal_audiometry(layer: &PdfLayerReference, font: &IndirectFontRef) {
                 (Point::new(Mm(x), Mm(grid_y - grid_height)), false),
             ],
             is_closed: false,
-            is_filled: false,
         };
         layer.add_line(line);
     }
@@ -169,7 +167,6 @@ fn draw_tonal_audiometry(layer: &PdfLayerReference, font: &IndirectFontRef) {
                 ),
             ],
             is_closed: false,
-            is_filled: false,
         };
         layer.add_line(line);
     }
@@ -189,8 +186,8 @@ fn draw_tonal_audiometry(layer: &PdfLayerReference, font: &IndirectFontRef) {
     fn draw_legend_item(
         layer: &PdfLayerReference,
         font: &IndirectFontRef,
-        x: f64,
-        y: &mut f64,
+        x: f32,
+        y: &mut f32,
         symbol: &str,
         text: &str,
     ) {
@@ -402,7 +399,6 @@ fn draw_footer(layer: &PdfLayerReference, font: &IndirectFontRef) {
             (Point::new(Mm(120.0), Mm(y_start - 1.0)), false),
         ],
         is_closed: false,
-        is_filled: false,
     };
     layer.add_line(line);
 
@@ -453,10 +449,10 @@ fn draw_main_borders(layer: &PdfLayerReference) {
 
 fn draw_simple_grid(
     layer: &PdfLayerReference,
-    x: f64,
-    y: f64,
-    w: f64,
-    h: f64,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
     v_lines: usize,
     h_lines: usize,
     x_min: &str,
@@ -476,7 +472,6 @@ fn draw_simple_grid(
                 (Point::new(Mm(lx), Mm(y + h)), false),
             ],
             is_closed: false,
-            is_filled: false,
         };
         layer.add_line(line);
     }
@@ -489,13 +484,12 @@ fn draw_simple_grid(
                 (Point::new(Mm(x + w), Mm(ly)), false),
             ],
             is_closed: false,
-            is_filled: false,
         };
         layer.add_line(line);
     }
 }
 
-fn draw_checkbox(layer: &PdfLayerReference, x: f64, y: f64, text: &str, checked: bool) {
+fn draw_checkbox(layer: &PdfLayerReference, x: f32, y: f32, text: &str, checked: bool) {
     layer.add_rect(Rect::new(Mm(x), Mm(y), Mm(x + 3.0), Mm(y + 3.0)));
     if checked {
         // Draw an 'X'
@@ -505,7 +499,6 @@ fn draw_checkbox(layer: &PdfLayerReference, x: f64, y: f64, text: &str, checked:
                 (Point::new(Mm(x + 3.0), Mm(y + 3.0)), false),
             ],
             is_closed: false,
-            is_filled: false,
         };
         let line2 = Line {
             points: vec![
@@ -513,7 +506,6 @@ fn draw_checkbox(layer: &PdfLayerReference, x: f64, y: f64, text: &str, checked:
                 (Point::new(Mm(x + 3.0), Mm(y)), false),
             ],
             is_closed: false,
-            is_filled: false,
         };
         layer.add_line(line1);
         layer.add_line(line2);
@@ -528,8 +520,8 @@ fn draw_checkbox(layer: &PdfLayerReference, x: f64, y: f64, text: &str, checked:
 fn draw_speech_table(
     layer: &PdfLayerReference,
     font: &IndirectFontRef,
-    x: f64,
-    y: f64,
+    x: f32,
+    y: f32,
     title: &str,
 ) {
     layer.use_text(title, FONT_SIZE_NORMAL, Mm(x + 30.0), Mm(y), font);
@@ -554,8 +546,8 @@ fn draw_speech_table(
 fn draw_immitance_panel(
     layer: &PdfLayerReference,
     font: &IndirectFontRef,
-    x: f64,
-    y: f64,
+    x: f32,
+    y: f32,
     title: &str,
 ) {
     layer.use_text(title, FONT_SIZE_NORMAL, Mm(x + 30.0), Mm(y), font);
