@@ -70,6 +70,21 @@ pub fn draw_symbol(
         Circle | CircleFilled => {
             draw_circle(layer, pos, size, symbol == CircleFilled, color);
         }
+        X | XFilled => {
+            draw_x(layer, pos, size, symbol == XFilled, color);
+        }
+        Greater | GreaterFilled => {
+            draw_angle(layer, pos, size, false, symbol == GreaterFilled, color);
+        }
+        Less | LessFilled => {
+            draw_angle(layer, pos, size, true, symbol == LessFilled, color);
+        }
+        LeftBracket | LeftBracketFilled => {
+            draw_bracket(layer, pos, size, true, symbol == LeftBracketFilled, color);
+        }
+        RightBracket | RightBracketFilled => {
+            draw_bracket(layer, pos, size, false, symbol == RightBracketFilled, color);
+        }
         _ => {
             let text = match symbol {
                 Square => unreachable!(),
@@ -78,17 +93,14 @@ pub fn draw_symbol(
                 TriangleFilled => unreachable!(),
                 Circle => unreachable!(),
                 CircleFilled => unreachable!(),
+                X | XFilled => unreachable!(),
                 S | SFilled => "S",
                 U | UFilled => "U",
-                X => "X",
-                XFilled => "\u{2716}", // ✖
                 A | AFilled => "A",
-                Greater => ">",
-                GreaterFilled => "\u{25B6}", // ▶
-                Less => "<",
-                LessFilled => "\u{25C0}", // ◀
-                LeftBracket | LeftBracketFilled => "[",
-                RightBracket | RightBracketFilled => "]",
+                Greater | GreaterFilled => unreachable!(),
+                Less | LessFilled => unreachable!(),
+                LeftBracket | LeftBracketFilled => unreachable!(),
+                RightBracket | RightBracketFilled => unreachable!(),
                 Star => "\u{2606}", // ☆
                 StarFilled => "\u{2605}", // ★
                 ArrowDownRight | ArrowDownRightFilled => "\u{2198}",
@@ -214,3 +226,105 @@ fn draw_circle(
     layer.set_outline_color(col);
     layer.add_polygon(poly);
 }
+
+fn draw_x(
+    layer: &PdfLayerReference,
+    origin: (Mm, Mm),
+    size_pt: f32,
+    thick: bool,
+    color: SymbolColor,
+) {
+    use printpdf::{Line, Point};
+    let d = pt_to_mm(size_pt);
+    let (x0, y0) = (origin.0 .0, origin.1 .0);
+    let p1 = Point::new(Mm(x0), Mm(y0));
+    let p2 = Point::new(Mm(x0 + d), Mm(y0 + d));
+    let p3 = Point::new(Mm(x0 + d), Mm(y0));
+    let p4 = Point::new(Mm(x0), Mm(y0 + d));
+
+    let c = color.to_color();
+    layer.set_outline_color(c);
+    layer.set_outline_thickness(if thick { 1.0 } else { 0.5 });
+    layer.add_line(Line { points: vec![(p1, false), (p2, false)], is_closed: false, ..Default::default() });
+    layer.add_line(Line { points: vec![(p3, false), (p4, false)], is_closed: false, ..Default::default() });
+    layer.set_outline_thickness(0.0);
+}
+
+fn draw_angle(
+    layer: &PdfLayerReference,
+    origin: (Mm, Mm),
+    size_pt: f32,
+    left: bool,
+    filled: bool,
+    color: SymbolColor,
+) {
+    use printpdf::{Line, Point, Polygon};
+    let d = pt_to_mm(size_pt);
+    let (x0, y0) = (origin.0 .0, origin.1 .0);
+    let (p1, p2, p3) = if left {
+        (
+            Point::new(Mm(x0 + d), Mm(y0)),
+            Point::new(Mm(x0), Mm(y0 + d / 2.0)),
+            Point::new(Mm(x0 + d), Mm(y0 + d)),
+        )
+    } else {
+        (
+            Point::new(Mm(x0), Mm(y0)),
+            Point::new(Mm(x0 + d), Mm(y0 + d / 2.0)),
+            Point::new(Mm(x0), Mm(y0 + d)),
+        )
+    };
+
+    let col = color.to_color();
+    layer.set_outline_color(col.clone());
+    layer.set_fill_color(col.clone());
+    if filled {
+        let poly = Polygon {
+            rings: vec![vec![(p1, false), (p2, false), (p3, false)]],
+            mode: PaintMode::FillStroke,
+            winding_order: WindingOrder::NonZero,
+        };
+        layer.add_polygon(poly);
+    } else {
+        layer.add_line(Line {
+            points: vec![(p1, false), (p2, false), (p3, false)],
+            is_closed: false,
+            ..Default::default()
+        });
+    }
+}
+
+fn draw_bracket(
+    layer: &PdfLayerReference,
+    origin: (Mm, Mm),
+    size_pt: f32,
+    left: bool,
+    filled: bool,
+    color: SymbolColor,
+) {
+    use printpdf::{Line, Point};
+    let d = pt_to_mm(size_pt);
+    let (x0, y0) = (origin.0 .0, origin.1 .0);
+    let (p1, p2, p3, p4) = if left {
+        (
+            Point::new(Mm(x0 + d), Mm(y0)),
+            Point::new(Mm(x0), Mm(y0)),
+            Point::new(Mm(x0), Mm(y0 + d)),
+            Point::new(Mm(x0 + d), Mm(y0 + d)),
+        )
+    } else {
+        (
+            Point::new(Mm(x0), Mm(y0)),
+            Point::new(Mm(x0 + d), Mm(y0)),
+            Point::new(Mm(x0 + d), Mm(y0 + d)),
+            Point::new(Mm(x0), Mm(y0 + d)),
+        )
+    };
+
+    let col = color.to_color();
+    layer.set_outline_color(col);
+    layer.set_outline_thickness(if filled { 1.0 } else { 0.5 });
+    layer.add_line(Line { points: vec![(p1, false), (p2, false), (p3, false), (p4, false)], is_closed: false, ..Default::default() });
+    layer.set_outline_thickness(0.0);
+}
+
