@@ -14,7 +14,9 @@ const FONT_SIZE_NORMAL: f32 = 9.;
 const FONT_SIZE_SMALL: f32 = 7.;
 const FONT_SIZE_SYMBOL: f32 = 12.;
 
-fn main() -> Result<(), std::io::Error> {
+use std::error::Error;
+
+fn main() -> Result<(), Box<dyn Error>> {
     // Create a new PDF document
     let (doc, page1, layer1) =
         PdfDocument::new("Audiogram", Mm(PAGE_WIDTH), Mm(PAGE_HEIGHT), "Layer 1");
@@ -120,7 +122,7 @@ fn draw_tonal_audiometry(layer: &PdfLayerReference, font: &IndirectFontRef) {
     let left_grid_start_x = center_x - grid_width_single - 10.0;
     for (i, freq) in freqs.iter().enumerate() {
         let x = left_grid_start_x + (i as f32 * x_spacing);
-        layer.use_text(freq, FONT_SIZE_SMALL, Mm(x - 2.0), Mm(grid_y + 2.0), font);
+        layer.use_text(*freq, FONT_SIZE_SMALL, Mm(x - 2.0), Mm(grid_y + 2.0), font);
         let line = Line {
             points: vec![
                 (Point::new(Mm(x), Mm(grid_y)), false),
@@ -284,9 +286,9 @@ fn draw_evaluation_details(layer: &PdfLayerReference, font: &IndirectFontRef) {
 
     // --- Validity & Stimuli ---
     layer.use_text("VALIDITÉ", FONT_SIZE_SMALL, Mm(x_start), Mm(y_start), font);
-    draw_checkbox(layer, x_start, y_start - 5.0, "Bonne", true);
-    draw_checkbox(layer, x_start, y_start - 10.0, "Moyenne", false);
-    draw_checkbox(layer, x_start, y_start - 15.0, "Nulle", false);
+    draw_checkbox(layer, font, x_start, y_start - 5.0, "Bonne", true);
+    draw_checkbox(layer, font, x_start, y_start - 10.0, "Moyenne", false);
+    draw_checkbox(layer, font, x_start, y_start - 15.0, "Nulle", false);
 
     layer.use_text(
         "STIMULI",
@@ -295,8 +297,8 @@ fn draw_evaluation_details(layer: &PdfLayerReference, font: &IndirectFontRef) {
         Mm(y_start),
         font,
     );
-    draw_checkbox(layer, x_start + 30.0, y_start - 5.0, "Sons purs", true);
-    draw_checkbox(layer, x_start + 30.0, y_start - 10.0, "Sons hululés", false);
+    draw_checkbox(layer, font, x_start + 30.0, y_start - 5.0, "Sons purs", true);
+    draw_checkbox(layer, font, x_start + 30.0, y_start - 10.0, "Sons hululés", false);
 
     // --- Evaluation Method ---
     layer.use_text(
@@ -308,6 +310,7 @@ fn draw_evaluation_details(layer: &PdfLayerReference, font: &IndirectFontRef) {
     );
     draw_checkbox(
         layer,
+        font,
         x_start + 70.0,
         y_start - 5.0,
         "Hughton-Westlake modifiée",
@@ -489,7 +492,14 @@ fn draw_simple_grid(
     }
 }
 
-fn draw_checkbox(layer: &PdfLayerReference, x: f32, y: f32, text: &str, checked: bool) {
+fn draw_checkbox(
+    layer: &PdfLayerReference,
+    font: &IndirectFontRef,
+    x: f32,
+    y: f32,
+    text: &str,
+    checked: bool,
+) {
     layer.add_rect(Rect::new(Mm(x), Mm(y), Mm(x + 3.0), Mm(y + 3.0)));
     if checked {
         // Draw an 'X'
@@ -510,10 +520,6 @@ fn draw_checkbox(layer: &PdfLayerReference, x: f32, y: f32, text: &str, checked:
         layer.add_line(line1);
         layer.add_line(line2);
     }
-    let font = layer
-        .get_document()
-        .get_font(layer.get_font().unwrap())
-        .unwrap(); // Hack to get font ref
     layer.use_text(text, FONT_SIZE_NORMAL, Mm(x + 5.0), Mm(y), font);
 }
 
