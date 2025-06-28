@@ -3,16 +3,16 @@ use std::fs::File;
 use std::io::BufWriter;
 
 // A4 page dimensions in millimeters
-const PAGE_WIDTH: f32 = 210.0;
-const PAGE_HEIGHT: f32 = 297.0;
-const MARGIN: f32 = 10.0;
+const PAGE_WIDTH: f64 = 210.0;
+const PAGE_HEIGHT: f64 = 297.0;
+const MARGIN: f64 = 10.0;
 
 // Font sizes
-const FONT_SIZE_LARGE_TITLE: f32 = 18.;
-const FONT_SIZE_TITLE: f32 = 11.;
-const FONT_SIZE_NORMAL: f32 = 9.;
-const FONT_SIZE_SMALL: f32 = 7.;
-const FONT_SIZE_SYMBOL: f32 = 12.;
+const FONT_SIZE_LARGE_TITLE: f64 = 18.0;
+const FONT_SIZE_TITLE: f64 = 11.0;
+const FONT_SIZE_NORMAL: f64 = 9.0;
+const FONT_SIZE_SMALL: f64 = 7.0;
+const FONT_SIZE_SYMBOL: f64 = 12.0;
 
 fn main() -> Result<(), std::io::Error> {
     // Create a new PDF document
