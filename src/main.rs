@@ -1,6 +1,9 @@
 use printpdf::*;
 use std::{fs::File, io::BufWriter};
 
+mod shapes;
+use shapes::{draw_symbol, Symbol, SymbolColor};
+
 fn main() {
     /* ── create a Letter page ─────────────────────────────────────────── */
     let (doc, page, layer) = PdfDocument::new("Text‑input demo", Mm(215.9), Mm(279.4), "Layer 1");
@@ -43,6 +46,49 @@ fn main() {
     let text_y = y0.0 + (rect_h.0 + pt_to_mm(font_size_pt * 0.30).0) * 0.5;
 
     layer.use_text(caption, font_size_pt, Mm(text_x), Mm(text_y), &font);
+
+    // draw various audiogram symbols below
+    let sym_font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
+    let mut sx = Mm(origin.0 .0);
+    let sy = Mm(origin.1 .0 - 50.0);
+    let step = Mm(6.0);
+    let symbols = [
+        Symbol::Square,
+        Symbol::SquareFilled,
+        Symbol::Triangle,
+        Symbol::TriangleFilled,
+        Symbol::Circle,
+        Symbol::CircleFilled,
+        Symbol::S,
+        Symbol::SFilled,
+        Symbol::U,
+        Symbol::UFilled,
+        Symbol::X,
+        Symbol::XFilled,
+        Symbol::A,
+        Symbol::AFilled,
+        Symbol::Greater,
+        Symbol::GreaterFilled,
+        Symbol::Less,
+        Symbol::LessFilled,
+        Symbol::LeftBracket,
+        Symbol::LeftBracketFilled,
+        Symbol::RightBracket,
+        Symbol::RightBracketFilled,
+        Symbol::Star,
+        Symbol::StarFilled,
+        Symbol::ArrowDownRight,
+        Symbol::ArrowDownRightFilled,
+        Symbol::ArrowDownLeft,
+        Symbol::ArrowDownLeftFilled,
+        Symbol::VT,
+        Symbol::VTFilled,
+    ];
+    for (i, sym) in symbols.iter().enumerate() {
+        let color = if i % 2 == 0 { SymbolColor::Red } else { SymbolColor::Blue };
+        draw_symbol(&layer, &sym_font, *sym, (sx, sy), 10.0, color);
+        sx = Mm(sx.0 + step.0);
+    }
 
     /* ── save ─────────────────────────────────────────────────────────── */
     doc.save(&mut BufWriter::new(
