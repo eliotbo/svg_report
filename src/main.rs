@@ -18,14 +18,18 @@ fn main() {
     /* ── add centred text ────────────────────────────────────────────── */
     let font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
     let caption = "Jane Doe";
-    let font_size_pt = 10.0;
+    let font_size_pt: f32 = 10.0;
 
     // text width in points (1 pt = 1/72 inch)
-    let text_w_pt =
-        font.get_text_width(caption, font_size_pt).unwrap() as f64 * font_size_pt / 1000.0;
+    let text_w_pt = {
+        // printpdf does not currently expose a convenient API for obtaining the
+        // rendered text width. For the sake of positioning the caption we use a
+        // rough estimate based on the number of characters.
+        caption.chars().count() as f32 * font_size_pt * 0.6
+    };
 
     // convert helper: points ‑> Mm
-    let pt_to_mm = |pt: f64| Mm(pt * 25.4 / 72.0);
+    let pt_to_mm = |pt: f32| Mm(pt * 25.4 / 72.0);
 
     // centre inside the rectangle
     let (x0, y0) = origin;
@@ -63,12 +67,10 @@ fn draw_rounded_rect(layer: &PdfLayerReference, origin: (Mm, Mm), w: Mm, h: Mm, 
     ];
 
     // build and add shape
-    Line {
+    let line = Line {
         points: pts,
         is_closed: true,
-        has_fill: false,
-        has_stroke: true,
-        is_clipping_path: false,
-    }
-    .add_to_layer(layer.clone());
+        ..Default::default()
+    };
+    layer.add_line(line);
 }
