@@ -1,6 +1,9 @@
 use printpdf::*;
 use std::{fs::File, io::BufWriter};
 
+mod shapes;
+use shapes::{draw_symbol, Symbol, SymbolColor};
+
 fn main() {
     /* ── create a Letter page ─────────────────────────────────────────── */
     let (doc, page, layer) = PdfDocument::new("Text‑input demo", Mm(215.9), Mm(279.4), "Layer 1");
@@ -13,6 +16,13 @@ fn main() {
 
     /* ── draw text input outline with curved sides ───────────────────── */
     draw_curved_sides_rect(&layer, origin, rect_w, rect_h);
+
+    // draw a rounded rectangle below the pill
+    let rounded_rect_origin = (Mm(origin.0 .0), Mm(origin.1 .0 - 25.0));
+    let rounded_rect_w = rect_w;
+    let rounded_rect_h = Mm(20.0);
+    let corner_radius = Mm(4.0);
+    draw_rounded_rect(&layer, rounded_rect_origin, rounded_rect_w, rounded_rect_h, corner_radius);
 
     /* ── add centred text ────────────────────────────────────────────── */
     let font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
@@ -36,6 +46,49 @@ fn main() {
     let text_y = y0.0 + (rect_h.0 + pt_to_mm(font_size_pt * 0.30).0) * 0.5;
 
     layer.use_text(caption, font_size_pt, Mm(text_x), Mm(text_y), &font);
+
+    // draw various audiogram symbols below
+    let sym_font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
+    let mut sx = Mm(origin.0 .0);
+    let sy = Mm(origin.1 .0 - 50.0);
+    let step = Mm(6.0);
+    let symbols = [
+        Symbol::Square,
+        Symbol::SquareFilled,
+        Symbol::Triangle,
+        Symbol::TriangleFilled,
+        Symbol::Circle,
+        Symbol::CircleFilled,
+        Symbol::S,
+        Symbol::SFilled,
+        Symbol::U,
+        Symbol::UFilled,
+        Symbol::X,
+        Symbol::XFilled,
+        Symbol::A,
+        Symbol::AFilled,
+        Symbol::Greater,
+        Symbol::GreaterFilled,
+        Symbol::Less,
+        Symbol::LessFilled,
+        Symbol::LeftBracket,
+        Symbol::LeftBracketFilled,
+        Symbol::RightBracket,
+        Symbol::RightBracketFilled,
+        Symbol::Star,
+        Symbol::StarFilled,
+        Symbol::ArrowDownRight,
+        Symbol::ArrowDownRightFilled,
+        Symbol::ArrowDownLeft,
+        Symbol::ArrowDownLeftFilled,
+        Symbol::VT,
+        Symbol::VTFilled,
+    ];
+    for (i, sym) in symbols.iter().enumerate() {
+        let color = if i % 2 == 0 { SymbolColor::Red } else { SymbolColor::Blue };
+        draw_symbol(&layer, &sym_font, *sym, (sx, sy), 10.0, color);
+        sx = Mm(sx.0 + step.0);
+    }
 
     /* ── save ─────────────────────────────────────────────────────────── */
     doc.save(&mut BufWriter::new(
@@ -89,6 +142,71 @@ fn draw_curved_sides_rect(
         (Point::new(Mm(x0.0), Mm(y0.0 + r)), false),
 
         // left side - bottom quarter
+        (Point::new(Mm(x0.0), Mm(y0.0 + r)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + r - c)), true),
+        (Point::new(Mm(x0.0 + r - c), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + r), Mm(y0.0)), false),
+    ];
+
+    let line = Line {
+        points: pts,
+        is_closed: true,
+        ..Default::default()
+    };
+
+    layer.add_line(line);
+}
+
+/* helper: draw a rectangle with rounded corners */
+fn draw_rounded_rect(
+    layer: &PdfLayerReference,
+    origin: (Mm, Mm),
+    w: Mm,
+    h: Mm,
+    r: Mm,
+) {
+    use printpdf::{Line, Point};
+
+    const C: f32 = 0.55191505; // bezier approximation constant
+
+    let (x0, y0) = origin;
+    let (w, h, r) = (w.0, h.0, r.0);
+    let c = r * C;
+
+    let pts = vec![
+        // start at bottom left after corner
+        (Point::new(Mm(x0.0 + r), Mm(y0.0)), false),
+        // bottom edge
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0)), false),
+
+        // bottom-right corner
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + w - r + c), Mm(y0.0)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r - c)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + r)), false),
+
+        // right edge
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + h - r)), false),
+
+        // top-right corner
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + h - r)), true),
+        (Point::new(Mm(x0.0 + w), Mm(y0.0 + h - r + c)), true),
+        (Point::new(Mm(x0.0 + w - r + c), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0 + w - r), Mm(y0.0 + h)), false),
+
+        // top edge
+        (Point::new(Mm(x0.0 + r), Mm(y0.0 + h)), false),
+
+        // top-left corner
+        (Point::new(Mm(x0.0 + r), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0 + r - c), Mm(y0.0 + h)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + h - r + c)), true),
+        (Point::new(Mm(x0.0), Mm(y0.0 + h - r)), false),
+
+        // left edge
+        (Point::new(Mm(x0.0), Mm(y0.0 + r)), false),
+
+        // bottom-left corner
         (Point::new(Mm(x0.0), Mm(y0.0 + r)), true),
         (Point::new(Mm(x0.0), Mm(y0.0 + r - c)), true),
         (Point::new(Mm(x0.0 + r - c), Mm(y0.0)), true),
